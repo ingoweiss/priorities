@@ -28,3 +28,65 @@ class Data:
                 frames.append(epics)
 
         return pd.concat(frames)
+
+    @classmethod
+    def changes(cls):
+
+        top = 5
+
+        # Current priority:
+        current_priority = Data.priorities().pivot_table(index='Date', columns='Epic', values='Priority')
+
+        # Previous priority:
+        previous_priority = current_priority[:-1]\
+            .set_index(current_priority[1:].index)\
+            .reindex(index=current_priority.index)
+
+        # Category:
+        category = current_priority.copy()
+        category.loc[:,:] = None
+        category[current_priority == previous_priority] = 'Unchanged'
+        category[current_priority != previous_priority] = 'Changed'
+        category[previous_priority.isna()] = 'Added'
+        category[current_priority.isna()] = 'Removed'
+        category[current_priority.isna()] = 'Removed'
+        category.loc[category.index.min()] = 'Initial'
+
+        # Change:
+        change = current_priority - previous_priority
+
+        # Size of change:
+        change_size = change.abs()
+
+        # Does the change change the top priorities?
+        changes_top_priorities = current_priority.copy()
+        changes_top_priorities.loc[:,:] = False
+        changes_top_priorities[category.isin(['Changed', 'Added', 'Removed']) & ((previous_priority <= top) ^ (current_priority <= top))] = True
+
+        # Highest priority changed:
+        highest_priority_changed = current_priority.copy()
+        highest_priority_changed.loc[:,:] = np.nan
+        highest_priority_changed[changes_top_priorities & ((current_priority < previous_priority) | previous_priority.isna())] = current_priority
+        highest_priority_changed[changes_top_priorities & ((previous_priority < current_priority) | current_priority.isna())] = previous_priority
+
+        # Impact Score
+        impact_score = current_priority.copy()
+        impact_score.loc[:,:] = 0
+        impact_score[changes_top_priorities] = (top + 1 - highest_priority_changed)*10
+
+        fields_map = {
+            'Current': current_priority,
+            'Previous': previous_priority,
+            'Category': category,
+            'Change': change,
+            'Change Size': change_size,
+            'Changes Top Priorities?': changes_top_priorities,
+            'Highest Priority Changed': highest_priority_changed,
+            'Impact Score': impact_score
+        }
+        changes = pd.concat(fields_map.values(), keys=fields_map.keys())\
+            .unstack()\
+            .transpose()\
+            .reset_index()
+
+        return changes
