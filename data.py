@@ -14,13 +14,17 @@ class Data:
         date_pattern = re.compile(cls._data_dir + '/priorities-(\d{4}-\d{2}-\d{2})\.csv')
         frames = []
 
-        for df in data_files:
-            match = date_pattern.match(df)
+        for df_name in data_files:
+            match = date_pattern.match(df_name)
             if match:
                 date = pd.to_datetime(match.group(1))
-                data = pd.read_csv(df)
-                data['Date'] = date
-                data['Priority'] = data.index + 1
-                frames.append(data)
+                with open(df_name) as df:
+                    epics_list = df.read().split("\n")
+                epics = pd.DataFrame({'Epic': epics_list})\
+                    .replace('', np.nan)\
+                    .dropna()
+                epics['Date'] = date
+                epics['Priority'] = epics.index + 1
+                frames.append(epics)
 
         return pd.concat(frames)
