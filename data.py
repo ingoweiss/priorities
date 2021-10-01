@@ -37,6 +37,12 @@ class Data:
         # Current priority:
         current_priority = Data.priorities().pivot_table(index='Date', columns='Epic', values='Priority')
 
+        # Previous date:
+        dates = np.insert(current_priority.index.values, 0, None)[0:-1]
+        width, height = current_priority.shape
+        previous_date = pd.DataFrame([dates]*height).transpose().set_index(current_priority.index)
+        previous_date.columns = current_priority.columns
+
         # Previous priority:
         previous_priority = current_priority[:-1]\
             .set_index(current_priority[1:].index)\
@@ -75,8 +81,9 @@ class Data:
         impact_score[changes_top_priorities] = (top + 1 - highest_priority_changed)*10
 
         fields_map = {
-            'Current': current_priority,
-            'Previous': previous_priority,
+            'Previous Date': previous_date,
+            'Current Priority': current_priority,
+            'Previous Priority': previous_priority,
             'Category': category,
             'Change': change,
             'Change Size': change_size,
