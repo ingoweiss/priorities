@@ -57,6 +57,7 @@ class Data:
         category[current_priority.isna()] = 'Removed'
         category[current_priority.isna()] = 'Removed'
         category.loc[category.index.min()] = 'Initial'
+        category[current_priority.isna() & previous_priority.isna()] = 'Absent'
 
         # Change:
         change = current_priority - previous_priority
