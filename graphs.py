@@ -72,8 +72,9 @@ class Graphs:
         fig.update_yaxes(
             autorange='reversed',
             showgrid=False,
-            showticklabels=False
-        )
+            showticklabels=False,
+            zeroline=False
+       )
         fig.update_xaxes(
             tickmode = 'array',
             tickvals = epics.index,
